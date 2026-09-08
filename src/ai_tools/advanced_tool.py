@@ -29,6 +29,7 @@ from pathlib import Path
 
 from ollama import chat, web_fetch, web_search
 
+
 # --------------------------------------------------------------------------
 # Safety configuration for the CLI tool. Edit this list to fit your workflow
 # -- keep it as short as you can. Nothing outside this list will ever run.
