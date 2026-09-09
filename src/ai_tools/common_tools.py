@@ -4,7 +4,6 @@ import pytz
 from datetime import datetime
 
 
-
 @tool
 def calculator(expression: str) -> str:
     """
@@ -49,4 +48,5 @@ def current_datetime(region: str = "Asia/Kolkata") -> str:
             f"{region!r}: {e}"
         )
 
-
+def get_common_tools():
+    return [calculator, current_datetime]
