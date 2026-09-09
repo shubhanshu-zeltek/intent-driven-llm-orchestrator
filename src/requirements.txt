@@ -15,3 +15,5 @@ ddgs
 uvicorn
 fastapi
 jinja2
+python-docx
+openpyxl
