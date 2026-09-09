@@ -12,3 +12,6 @@ numexpr
 boto3
 mypy_extensions
 ddgs
+uvicorn
+fastapi
+jinja2
