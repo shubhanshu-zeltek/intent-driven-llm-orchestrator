@@ -1,7 +1,5 @@
 import sys
-
 import uvicorn
-
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -21,7 +19,7 @@ app = FastAPI(
         "Multi-LLM orchestration API with intent-based routing, "
         "specialized models, LLM-as-a-Judge, and controlled retry."
     ),
-    version="1.0.0",
+    version="1.0.1",
 )
 
 
