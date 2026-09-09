@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from api.schemas import QueryRequest, QueryResponse
-from main import run
+from orchestrator import run
 
 
 router = APIRouter(
@@ -8,12 +8,8 @@ router = APIRouter(
     tags=["LLM"]
 )
 
-@router.post(
-    "/query",
-    response_model=QueryResponse,
-)
+@router.post("/query", response_model=QueryResponse,)
 def process_query(request: QueryRequest) -> QueryResponse:
-
     try:
         response = run(
             user_query=request.query,
