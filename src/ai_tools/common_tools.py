@@ -48,5 +48,9 @@ def current_datetime(region: str = "Asia/Kolkata") -> str:
             f"{region!r}: {e}"
         )
 
+
+def get_common_tools_name():
+    return ["calculator", "current_datetime"]
+
 def get_common_tools():
     return [calculator, current_datetime]

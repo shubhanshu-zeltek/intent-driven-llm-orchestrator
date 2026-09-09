@@ -26,6 +26,7 @@ chat_model: ChatModel = None
 agent_model: AgentModel = None
 coding_model: CodingModel = None
 
+previous_model_used: str = None
 
 def ask(query: str, model_name: str):
     global agent_model, chat_model, coding_model, initialized_models
@@ -44,17 +45,27 @@ def ask(query: str, model_name: str):
 
 
 def run(user_query: str, validate_and_fix: bool = True):
-    global user_intent_classifier_model
+    global user_intent_classifier_model, previous_model_used
     if not user_intent_classifier_model:
         user_intent_classifier_model = UserIntentClassifierModel(available_models=available_models, memory_window=5)
-    model_name = user_intent_classifier_model.run(query=user_query).strip()
+
+    classifier_query = user_query
+    if previous_model_used:
+        classifier_query += f" \nFYI: LAST CONVERSATION WAS DONE USING {previous_model_used} MODEL. If this is the continuation then use the last model itself."
+    
+    model_name = user_intent_classifier_model.run(query=classifier_query).strip()
     print(f"(*) Using {model_name} model for current query.")
     response = ask(query=user_query, model_name=model_name)
+
+    if isinstance(response, dict) and response.get("status") == "needs_confirmation":
+        return response   # hand this to the API layer as-is, skip judging/retry
+
     if validate_and_fix:
         success = evaluate(query=user_query, response=response)
         if not success and validate_and_fix:
             print(f"(*) LLM seem to repond with inaccurate response. Retrying...")
-            run(user_query=user_query, validate_and_fix=False)
+            response = run(user_query=user_query, validate_and_fix=False)
+    previous_model_used = model_name
     print(f"\n(*) LLM Response: {response}")
     return response
 

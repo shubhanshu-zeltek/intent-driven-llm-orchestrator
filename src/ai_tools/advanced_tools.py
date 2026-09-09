@@ -5,14 +5,13 @@ import shlex
 import shutil
 import subprocess
 from pathlib import Path
-
-from ollama import chat, web_fetch, web_search
+from langchain_core.tools import tool, StructuredTool
+from ollama import web_fetch, web_search
 
 
 IS_WINDOWS = platform.system() == "Windows"
 
 ALLOWED_COMMANDS = {"python", "python3", "pip", "git", "curl"}
-CONFIRM_BEFORE_RUN = True   # ask a human before executing anything
 COMMAND_TIMEOUT = 30        # seconds
 MAX_OUTPUT_CHARS = 4000     # keep tool output from flooding the model's context
 
@@ -112,7 +111,7 @@ def _run_segment(tokens: list, stdin_text) -> str:
     )
     return result.stdout + result.stderr
 
-
+@tool
 def run_command(command: str) -> str:
     """Run a command, or a pipeline of commands separated by '|'.
 
@@ -147,11 +146,6 @@ def run_command(command: str) -> str:
     if blocked:
         return f"Blocked: {', '.join(blocked)} not allowed. Allowed: {', '.join(sorted(known))}"
 
-    if CONFIRM_BEFORE_RUN:
-        approved = input(f"\n[agent wants to run] {command}\nAllow? (y/n): ").strip().lower()
-        if approved != "y":
-            return "Command was not approved by the user."
-
     try:
         stdin_text, output = None, ""
         for tokens in parsed:
@@ -170,6 +164,7 @@ def run_command(command: str) -> str:
 # --------------------------------------------------------------------------
 # Tool 2: file creation
 # --------------------------------------------------------------------------
+@tool
 def write_file(path: str, content: str) -> str:
     """Create or overwrite a plain text-based file.
 
@@ -182,7 +177,7 @@ def write_file(path: str, content: str) -> str:
     p.write_text(content, encoding="utf-8")
     return f"Wrote {len(content)} characters to {p.resolve()}"
 
-
+@tool
 def write_docx(path: str, content: str) -> str:
     """Create a Word document. `content` is plain text; each line becomes a paragraph."""
     try:
@@ -198,7 +193,7 @@ def write_docx(path: str, content: str) -> str:
     doc.save(p)
     return f"Wrote Word document to {p.resolve()}"
 
-
+@tool
 def write_xlsx(path: str, rows_csv: str) -> str:
     """Create an Excel file from CSV-style text (one row per line, comma-separated cells)."""
     try:
@@ -216,14 +211,28 @@ def write_xlsx(path: str, rows_csv: str) -> str:
     return f"Wrote spreadsheet to {p.resolve()}"
 
 
+web_search_tool = StructuredTool.from_function(
+    func=web_search,
+    name="web_search",
+    description=(web_search.__doc__ or "Search the web via Ollama's hosted search API.").strip(),
+)
+web_fetch_tool = StructuredTool.from_function(
+    func=web_fetch,
+    name="web_fetch",
+    description=(web_fetch.__doc__ or "Fetch the content of a specific URL via Ollama's hosted fetch API.").strip(),
+)
+
+available_tools = {
+    "web_search": web_search_tool,
+    "web_fetch": web_fetch_tool,
+    "write_file": write_file,
+    "write_docx": write_docx,
+    "write_xlsx": write_xlsx,
+    "run_command": run_command,
+}
+
+def get_advanced_tools_name():
+    return list(available_tools)
+
 def get_advanced_tools():
-    available_tools = {
-        "web_search": web_search,
-        "web_fetch": web_fetch,
-        "ddg-search": fds,
-        "write_file": write_file,
-        "write_docx": write_docx,
-        "write_xlsx": write_xlsx,
-        "run_command": run_command,
-    }
     return list(available_tools.values())
