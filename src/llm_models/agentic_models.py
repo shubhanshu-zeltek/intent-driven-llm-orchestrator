@@ -7,6 +7,8 @@ from langchain_community.agent_toolkits.load_tools import load_tools, get_all_to
 from langgraph.checkpoint.memory import InMemorySaver
 
 from llm_models.llm_factory import LLMFactory
+from ai_tools.common_tools import get_common_tools
+from ai_tools.advanced_tools import get_advanced_tools
 
 
 AGENT_SYSTEM_PROMPT = """
@@ -110,19 +112,17 @@ class AgentModel:
 
     def __load_llm_tools(self):
         # tools_name = get_all_tool_names()
+
+        ### Added duckduckgo to help with no API TOKEN web search
         tools_name = [
             "ddg-search"
         ]
-
         llm_tools = load_tools(
             tools_name,
             llm=self.__model
         )
-
-        llm_tools.extend([
-            calculator,
-            current_datetime,
-        ])
+        llm_tools.extend(get_common_tools())  # currently will get calculator, and current_datetime tools
+        llm_tools.extend(get_advanced_tools())  # adding more advanced tools like file creation, command runner, etc.
         return llm_tools
 
     def __build_tool_catalog(self) -> str:
@@ -160,50 +160,4 @@ class AgentModel:
                 }
             }
         )
-
         return response["messages"][-1].content
-
-
-@tool
-def calculator(expression: str) -> str:
-    """
-    Evaluate a mathematical expression.
-
-    Use this tool whenever an exact mathematical calculation is required.
-    """
-    try:
-        result = numexpr.evaluate(expression).item()
-        return str(result)
-
-    except Exception as e:
-        return f"Error evaluating expression: {e}"
-
-
-@tool
-def current_datetime(region: str = "Asia/Kolkata") -> str:
-    """
-    Return the current date and time for an IANA timezone.
-
-    Examples:
-        Asia/Kolkata
-        America/New_York
-        Europe/London
-    """
-    try:
-        tz = pytz.timezone(region)
-        return datetime.now(tz).strftime(
-            "%m/%d/%Y %I:%M %p"
-        )
-
-    except pytz.exceptions.UnknownTimeZoneError:
-        return (
-            f"Error: '{region}' is not a recognized timezone. "
-            "Use an IANA timezone such as 'Asia/Kolkata' "
-            "or 'America/New_York'."
-        )
-
-    except Exception as e:
-        return (
-            f"Error retrieving datetime for region "
-            f"{region!r}: {e}"
-        )
